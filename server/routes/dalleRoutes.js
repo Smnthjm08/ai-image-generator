@@ -1,4 +1,4 @@
-import express, { response } from "express";
+import express from "express";
 import * as dotenv from "dotenv";
 import OpenAI from "openai";
 import Post from "../db/models/post.js";
@@ -12,25 +12,28 @@ const openai = new OpenAI({
 });
 
 router.route("/").get((req, res) => {
-  res.send("Hello from DALL -E!");
+  res.send("Hello from DALL-E!");
 });
 
 router.route("/").post(async (req, res) => {
   try {
     const { prompt } = req.body;
 
-    const aiResponse = await openai.complete({
-      engine: "davinci-codex",
+    const aiResponse = await openai.images.generate({
       prompt,
-      max_tokens: 64,
       n: 1,
+      size: "1024x1024",
+      response_format: "b64_json",
     });
 
-    const image = aiResponse.data.choices[0].text;
-    res.status(200).json({ photo: image });
+    const image = aiResponse.data[0].b64_json;
+
+    return res.status(200).json({ photo: image });
   } catch (error) {
-    console.log(error);
-    res.status(500).send(error?.response.data.error.message);
+    console.error(error);
+    const errorMessage =
+      error.response?.data?.error?.message || "An unexpected error occurred.";
+    res.status(500).send(errorMessage);
   }
 });
 
